@@ -14,7 +14,7 @@ class IndesignModel:
                 transformations = [
                     float(i) for i in iterator.get("ItemTransform").split(" ")
                 ]
-        print(transformations)
+                print(transformations)
 
     @staticmethod
     def setup_page(root):

@@ -75,9 +75,10 @@ def get_image_framing(properties, iterator):
         "default": handle_default,
     }
 
-    return switcher.get(properties["FittingOnEmptyFrame"], switcher["default"])(
-        properties, iterator
-    )
+    if properties.get("FittingOnEmptyFrame") != None:
+        return properties.get("FittingOnEmptyFrame")(properties, iterator)
+    else:
+        return switcher["default"](properties, iterator)
 
 
 def get_image_opacity(properties):
@@ -198,8 +199,10 @@ def get_strike_through(args):
     return "text-decoration: line-through" if args else None
 
 
-def process_image(url, outer, inner):
+def process_image(url, outer="", inner=""):
     url = unquote(url).split(":")
+    print("=======image url=====>",url[1])
+    url[1] = "/home/abhishekdubey/Downloads/bmw-9.jpg"
     with open(url[1], "rb") as f:
         b = base64.b64encode(f.read())
     return (
