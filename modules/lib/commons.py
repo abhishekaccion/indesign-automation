@@ -75,7 +75,9 @@ def get_image_framing(properties, iterator):
         "default": handle_default,
     }
 
-    if properties.get("FittingOnEmptyFrame") != None:
+    if properties.get("FittingOnEmptyFrame") != None and hasattr(
+        properties.get("FittingOnEmptyFrame"), "__call__"
+    ):
         return properties.get("FittingOnEmptyFrame")(properties, iterator)
     else:
         return switcher["default"](properties, iterator)
@@ -201,7 +203,7 @@ def get_strike_through(args):
 
 def process_image(url, outer="", inner=""):
     url = unquote(url).split(":")
-    print("=======image url=====>",url[1])
+    print("=======image url=====>", url[1])
     url[1] = "/home/abhishekdubey/Downloads/bmw-9.jpg"
     with open(url[1], "rb") as f:
         b = base64.b64encode(f.read())
