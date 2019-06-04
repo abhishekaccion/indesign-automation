@@ -83,7 +83,7 @@ def get_image_framing(properties, iterator):
         return switcher["default"](properties, iterator)
 
 
-def get_image_opacity(properties):
+def BlendingSetting(properties, package=None, args=None):
     return (
         "opacity:" + str(int(properties["Opacity"]) / 100) + ";"
         if properties.get("Opacity")
@@ -110,14 +110,13 @@ def get_image_container_size(properties):
             width.append(float(points[0]))
         if not float(points[1]) in height:
             height.append(float(points[1]))
-
     size["width"] = str(-(width[0] - width[1])) + "pt"
     size["height"] = str(-(height[0] - height[1])) + "pt"
 
     return size, width, height
 
 
-def get_alignment(args):
+def Justification(val, package=None, args=None):
     # Function to get text alignment : defaults to left
     switcher = {
         "CenterAlign": "text-align: center",
@@ -125,10 +124,10 @@ def get_alignment(args):
         "LeftAlign": "text-align: left",
     }
 
-    return switcher.get(args, switcher["LeftAlign"])
+    return switcher.get(val, switcher["LeftAlign"])
 
 
-def get_font_weight(args):
+def FontStyle(val, package=None, args=None):
     # Function to get font weight : defaults to normal
     switcher = {
         "Bold": "font-weight: bold",
@@ -137,25 +136,25 @@ def get_font_weight(args):
         "Bold Italic": "font-style: italic; font-weight: bold",
     }
 
-    return switcher.get(args, switcher["Normal"])
+    return switcher.get(val, switcher["Normal"])
 
 
-def get_font_size(args):
+def PointSize(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
-    return "font-size: " + args + "pt" if args else "font-size: 12pt"
+    return "font-size: " + val + "pt" if val else "font-size: 12pt"
 
 
-def get_font_family(args):
+def fontFamily(val, package=None, args=None):
     # Function to get font family: defaults to minion pro
-    return "font-family:" + args if args else "font-family: Minion Pro"
+    return "font-family:" + val if val else "font-family: Minion Pro"
 
 
-def get_line_height(args):
+def lineHeight(val, package=None, args=None):
     # Function to get line height: defaults to 14.4pt
-    return "line-height:" + args + "pt" if args else "line-height: 14.4pt"
+    return "line-height:" + val + "pt" if val else "line-height: 14.4pt"
 
 
-def get_color(color, package, args):
+def FillColor(color, package, args):
     tree = ET.parse(args.extract + package.graphic.name)
 
     color_str = "rgb(0, 0, 0)"
@@ -173,7 +172,7 @@ def get_color(color, package, args):
     return "color:" + color_str
 
 
-def get_stroke_color(color, package, args):
+def StrokeColor(color, package, args):
     tree = ET.parse(args.extract + package.graphic.name)
 
     currentColor = None
@@ -197,23 +196,17 @@ def get_text_decoration(args):
     return "text-decoration: underline" if args else None
 
 
-def get_strike_through(args):
-    return "text-decoration: line-through" if args else None
+def StrikeThru(val, package=None, args=None):
+    return "text-decoration: line-through" if val else None
 
 
 def process_image(url, outer="", inner=""):
     url = unquote(url).split(":")
-    print("=======image url=====>", url[1])
     url[1] = "/home/abhishekdubey/Downloads/bmw-9.jpg"
     with open(url[1], "rb") as f:
         b = base64.b64encode(f.read())
-    return (
-        "<span style='"
-        + outer
-        + "'><img style='"
-        + inner
-        + "' src='data:image/png;base64,"
-        + str(b).split("'")[1]
-        + "'/></span>"
-    )
+    return f"""<span style='{outer}'>
+        <img style='{inner}' 
+        src='data:image/png;base64,{str(b).split("'")[1]}'/>
+        </span>"""
 
