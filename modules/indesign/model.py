@@ -126,17 +126,35 @@ class IndesignModel:
                 for characterStyleRange in paragraphStyleRange.iter(
                     "CharacterStyleRange"
                 ):
+                    characterStyleDict = {
+                        "FontStyle": "font-weight: normal",
+                        "FillColor": "color:rgb(0, 0, 0)",
+                        "AppliedFont": commons.AppliedFont(None),
+                        "Leading": commons.Leading(None),
+                        "PointSize": "font-size: 12pt",
+                    }
+
+                    for char_attr in characterStyleRange.attrib:
+                        print("##char attr :  ",char_attr,characterStyleRange.attrib.get(char_attr))
+                        if hasattr(commons, char_attr):
+                            attr_function = getattr(commons, char_attr)
+                            characterStyleDict[char_attr] = attr_function(
+                                characterStyleRange.attrib.get(char_attr), package, args
+                            )
+
                     print("###LI characterStyleRange : ",characterStyleRange,characterStyleRange.attrib )
                     listItem=""
+                    lineStyle = "; ".join(list(characterStyleDict.values()))
                     for child in characterStyleRange.iter():
                         if child.tag == "Content":
-                            listItem += "<li>" + child.text + "</li>"
+                            listItem += f"<li style='{lineStyle}'>" + child.text + "</li>"
                             print("---Text---",child.text)
                         
                 if "LeftIndent" in paragraphStyleList:
-                    listStyle = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]+";"
+                    paragraphStyleList["LeftIndent"] = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]
+                    paraStyle = "; ".join(list(paragraphStyleList.values()))
                 if listItemParagraph == "BulletList":
-                    htmlContent += f"<span><ul style='{listStyle}'>{listItem}</ul></span>"
+                    htmlContent += f"<span><ul style='{paraStyle}'>{listItem}</ul></span>"
                 else:
                     htmlContent += f"<span><ol style='{lineStyle}'>{listItem}</ol></span>"        
 
