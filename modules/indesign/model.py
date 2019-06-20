@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 
 import modules.lib.commons as commons
-
+from ast import literal_eval
 
 class IndesignModel:
     def __init__(self):
@@ -32,6 +32,7 @@ class IndesignModel:
 
     def process_spreads(self, args, package):
         output = ""
+        stories = []
 
         for spread in package.spreads:
             tree = ET.parse(args.extract + spread)
@@ -42,10 +43,12 @@ class IndesignModel:
             for story_iterator in root.iter():
                 if story_iterator.tag == "TextFrame":
                     story = story_iterator.get("ParentStory")
-                    story = "Stories/Story_" + story + ".xml"
+                    if story not in stories:
+                        stories.append(story)
+                        story = "Stories/Story_" + story + ".xml"
 
-                    if story in package.stories:
-                        output += self.process_story(args, story, package)
+                        if story in package.stories:
+                            output += self.process_story(args, story, package)
 
                 if story_iterator.tag == "Rectangle":
                     outerStyle = "display: inline-block; overflow:hidden;"
@@ -151,12 +154,15 @@ class IndesignModel:
                             print("---Text---",child.text)
                         
                 if "LeftIndent" in paragraphStyleList:
+                    if "FirstLineIndent" in paragraphStyleList:
+                        del paragraphStyleList["FirstLineIndent"]
                     paragraphStyleList["LeftIndent"] = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]
                     paraStyle = "; ".join(list(paragraphStyleList.values()))
+                
                 if listItemParagraph == "BulletList":
                     htmlContent += f"<span><ul style='{paraStyle}'>{listItem}</ul></span>"
                 else:
-                    htmlContent += f"<span><ol style='{lineStyle}'>{listItem}</ol></span>"        
+                    htmlContent += f"<span><ol style='{paraStyle}'>{listItem}</ol></span>"        
 
             else:
                 paragraghStyle = f"<p style='{paraStyle}'>"
@@ -164,7 +170,7 @@ class IndesignModel:
                 for characterStyleRange in paragraphStyleRange.iter(
                     "CharacterStyleRange"
                 ):
-                    print("### characterStyleRange : ",characterStyleRange,characterStyleRange.attrib )
+                    # print("### characterStyleRange : ",characterStyleRange,characterStyleRange.attrib )
                     characterStyle = ""
                     characterStyleDict = {
                         "FontStyle": "font-weight: normal",
@@ -175,7 +181,7 @@ class IndesignModel:
                     }
 
                     for char_attr in characterStyleRange.attrib:
-                        print("##char attr :  ",char_attr,characterStyleRange.attrib.get(char_attr))
+                        # print("##char attr :  ",char_attr,characterStyleRange.attrib.get(char_attr))
                         if hasattr(commons, char_attr):
                             attr_function = getattr(commons, char_attr)
                             characterStyleDict[char_attr] = attr_function(
@@ -334,7 +340,7 @@ class IndesignModel:
 
                 # Close the paragraph style
                 paragraghStyle += "</p>"
-                htmlContent += paragraghStyle
+                htmlContent += paragraghStyle.replace("<br /></p>","</p>")
 
         return htmlContent
 

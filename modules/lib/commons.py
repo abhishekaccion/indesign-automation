@@ -64,7 +64,7 @@ def handle_fill(attrib, iterator):
 
 
 def handle_default(attrib, iterator):
-    return "object-fit: none;"
+    return ""
 
 
 def get_image_framing(properties, iterator):
@@ -98,6 +98,9 @@ def get_image_transformation(properties):
         else [0, 0, 0, 0, 0, 0]
     )
 
+def ptToPx(val):
+    print("&&&&&&&&&&&&",float(val),float(val)/72,float(val)/72*96)
+    return float(val)/72*96
 
 def get_image_container_size(properties):
     size = {}
@@ -105,13 +108,15 @@ def get_image_container_size(properties):
     height = []
 
     for path in properties.iter("PathPointType"):
+        print("****************",path.attrib)
         points = path.attrib["Anchor"].split(" ")
         if not float(points[0]) in width:
             width.append(float(points[0]))
         if not float(points[1]) in height:
             height.append(float(points[1]))
-    size["width"] = str(-(width[0] - width[1])) + "pt"
-    size["height"] = str(-(height[0] - height[1])) + "pt"
+    print("*******123******",width,height)        
+    size["width"] = str(ptToPx(-(width[0] - width[1]))) + "px"
+    size["height"] = str(ptToPx(-(height[0] - height[1]))) + "px"
 
     return size, width, height
 
@@ -127,7 +132,7 @@ def Justification(val, package=None, args=None):
         "RightJustified": "display: flex; justify-content: flex-end",
         "ToBindingSide": "display: flex; justify-content: end",
         "AwayFromBindingSide": "display: flex; justify-content: flex-end",
-        "FullyJustified": "display: flex; justify-content: flex-end",
+        "FullyJustified": "text-align: justify",
     }
 
     return switcher.get(val, switcher["LeftAlign"])
@@ -163,15 +168,27 @@ def Position(val, package=None, args=None):
 
 def LeftIndent(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
-    return f"text-indent: {val}px"
+    return f"padding-left: {val}px"
 
 def RightIndent(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
-    return f"text-indent: -{val}px"    
+    return f"padding-right: {val}px"
+
+def FirstLineIndent(val, package=None, args=None):
+    # Function
+    return f"text-indent: {val}px"
+
+def SpaceBefore(val, package=None, args=None):
+    # Function
+    return f"padding-top: {val}px"
+
+def SpaceAfter(val, package=None, args=None):
+    # Function
+    return f"padding-bottom: {val}px"
 
 def ParagraphBorderOn(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
-    return f"border-style: solid"
+    return f"border: 1px solid"
 
 def Underline(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
@@ -256,8 +273,8 @@ def process_image(url, outer="", inner=""):
     print("-----img----",url[1])
     with open(url[1], "rb") as f:
         b = base64.b64encode(f.read())
-    return f"""<span style='{outer}'>
-        <img style='{inner}' 
+    return f"""<span style='{outer} display: block; margin: auto'>
+        <img style='{outer} display: block; margin: auto' 
         src='data:image/png;base64,{str(b).split("'")[1]}'/>
         </span>"""
 
