@@ -203,11 +203,11 @@ def PointSize(val, package=None, args=None):
 
 def VerticalScale(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
-    return f"display: inline-block;transform: scaleY({int(val)/100})"
+    return f"display: inline-block;transform: scaleY({round(float(val))/100})"
 
 def HorizontalScale(val, package=None, args=None):
     # Function to get font size : defaults to 12pt
-    return f"display: inline-block;transform: scaleX({int(val)/100})"
+    return f"display: inline-block;transform: scaleX({round(float(val))/100})"
 
 def AppliedFont(val, package=None, args=None):
     # Function to get font family: defaults to minion pro
@@ -274,7 +274,7 @@ def process_image(url, outer="", inner=""):
     with open(url[1], "rb") as f:
         b = base64.b64encode(f.read())
     return f"""<span style='{outer} display: block; margin: auto'>
-        <img style='{outer} display: block; margin: auto' 
+        <img style='{outer} display: block; margin: auto; align:center;' 
         src='data:image/png;base64,{str(b).split("'")[1]}'/>
         </span>"""
 
