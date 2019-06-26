@@ -150,19 +150,18 @@ class IndesignModel:
                     lineStyle = "; ".join(list(characterStyleDict.values()))
                     for child in characterStyleRange.iter():
                         if child.tag == "Content":
-                            listItem += f"<li style='{lineStyle}'>" + child.text + "</li>"
-                            print("---Text---",child.text)
-                        
-                if "LeftIndent" in paragraphStyleList:
-                    if "FirstLineIndent" in paragraphStyleList:
-                        del paragraphStyleList["FirstLineIndent"]
-                    paragraphStyleList["LeftIndent"] = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]
-                    paraStyle = "; ".join(list(paragraphStyleList.values()))
-                
-                if listItemParagraph == "BulletList":
-                    htmlContent += f"<span><ul style='{paraStyle}'>{listItem}</ul></span>"
-                else:
-                    htmlContent += f"<span><ol style='{paraStyle}'>{listItem}</ol></span>"        
+                            listItem += f"<li style='{lineStyle}'>{child.text}</li>"
+                            print("---Text-LI--",child.text)
+                    if "LeftIndent" in paragraphStyleList:
+                        if "FirstLineIndent" in paragraphStyleList:
+                            del paragraphStyleList["FirstLineIndent"]
+                        paragraphStyleList["LeftIndent"] = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]
+                        paraStyle = "; ".join(list(paragraphStyleList.values()))
+                    
+                    if listItemParagraph == "BulletList":
+                        htmlContent += f"<span><ul style='{paraStyle}'>{listItem}</ul></span>"
+                    else:
+                        htmlContent += f"<span><ol style='{paraStyle}'>{listItem}</ol></span>"        
 
             else:
                 paragraghStyle = f"<p style='{paraStyle}'>"
@@ -329,7 +328,7 @@ class IndesignModel:
                             finalCharStyle = "; ".join(
                                 list(characterStyleDict.values())
                             )
-                            print("---Text---",child.text)
+                            print("---Text-P--",child.text)
                             characterStyle += f"<span style='{finalCharStyle}'>{child.text if child.text else None }</span>"
 
                         if child.tag == "Br":
