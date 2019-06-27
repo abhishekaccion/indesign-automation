@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 
 import modules.lib.commons as commons
 from ast import literal_eval
+import re
 
 class IndesignModel:
     def __init__(self):
@@ -157,11 +158,11 @@ class IndesignModel:
                             del paragraphStyleList["FirstLineIndent"]
                         paragraphStyleList["LeftIndent"] = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]
                         paraStyle = "; ".join(list(paragraphStyleList.values()))
-                    
-                    if listItemParagraph == "BulletList":
-                        htmlContent += f"<span><ul style='{paraStyle}'>{listItem}</ul></span>"
-                    else:
-                        htmlContent += f"<span><ol style='{paraStyle}'>{listItem}</ol></span>"        
+                    print("*************  span ***************",listItemParagraph,listItem)
+                    if listItemParagraph == "NumberedList" and listItem !="":
+                        htmlContent += f"<ol style='{paraStyle}'>{listItem}</ol><br>"        
+                    elif listItem !="":
+                        htmlContent += f"<ul style='{paraStyle}'>{listItem}</ul><br>"
 
             else:
                 paragraghStyle = f"<p style='{paraStyle}'>"
@@ -225,6 +226,7 @@ class IndesignModel:
 
                     # Get the Image url
                     imageUrl = ""
+                    last_tag = ""
                     for child in characterStyleRange.iter():
                         # if child.tag == "Rectangle":
                         #     for properties in child.iter():
@@ -332,14 +334,29 @@ class IndesignModel:
                             characterStyle += f"<span style='{finalCharStyle}'>{child.text if child.text else None }</span>"
 
                         if child.tag == "Br":
-                            characterStyle += "<br />"
+                            # characterStyle += "<br />"
+                            print("------------",last_tag,child.tag)
+                            if last_tag == "Br":
+                                characterStyle += f"</p><p style='{paraStyle}'>"
+                            elif last_tag == "Content":
+                                characterStyle += "<br>"
+
+                        #update last_tag
+                        last_tag = child.tag        
 
                     # Append character style to paragraph style
                     paragraghStyle += characterStyle
 
                 # Close the paragraph style
                 paragraghStyle += "</p>"
-                htmlContent += paragraghStyle.replace("<br /></p>","</p>")
+                pattern = re.compile(r"<p([^>]*)><\/p>")
+                paragraghStyle = paragraghStyle.replace("<p style=''></p>","")
+                if paragraghStyle.find("<br></p>") == -1:
+                    paragraghStyle = paragraghStyle.replace("</p>","<br></p>")
+                   
+                paragraghStyle = pattern.sub("",paragraghStyle)
+
+                htmlContent += paragraghStyle
 
         return htmlContent
 
