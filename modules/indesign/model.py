@@ -98,10 +98,14 @@ class IndesignModel:
         tree = ET.parse(args.extract + story)
         root = tree.getroot()
 
-        htmlContent = ""
+        htmlContent = "<style>p { margin: 0px;} ul { margin: 0px}</style>"
 
+        paragraphStyleRangeLength = 0
         for paragraphStyleRange in root.iter("ParagraphStyleRange"):
-
+            paragraphStyleRangeLength +=1
+        paragraphStyleRangeCounter = 0
+        for paragraphStyleRange in root.iter("ParagraphStyleRange"):
+            paragraphStyleRangeCounter +=1
             paragraphStyleList = {}
 
             for paragraph_attr in paragraphStyleRange.attrib:
@@ -112,24 +116,19 @@ class IndesignModel:
                         paragraphStyleRange.attrib.get(paragraph_attr), package, args
                     )
 
-            # Get the text alignment
-            # alignment = paragraphStyleRange.attrib.get("Justification")
-            # alignment = commons.get_alignment(alignment)
-
             paraStyle = "; ".join(list(paragraphStyleList.values()))
             listItemParagraph = paragraphStyleRange.attrib.get(
                 "BulletsAndNumberingListType"
             )
-
             if listItemParagraph:
-                # if listItemParagraph == "BulletList":
-                #     listStyle = f"<p style='{paraStyle}'><ul>"
-                # else:
-                #     listStyle = f"<p style='{paraStyle}'><ol>"
-
+                    
+                listItem=""
+                listItem += f"<li>"
+                
                 for characterStyleRange in paragraphStyleRange.iter(
                     "CharacterStyleRange"
                 ):
+                   
                     characterStyleDict = {
                         "FontStyle": "font-weight: normal",
                         "FillColor": "color:rgb(0, 0, 0)",
@@ -137,7 +136,6 @@ class IndesignModel:
                         "Leading": commons.Leading(None),
                         "PointSize": "font-size: 12pt",
                     }
-
                     for char_attr in characterStyleRange.attrib:
                         print("##char attr :  ",char_attr,characterStyleRange.attrib.get(char_attr))
                         if hasattr(commons, char_attr):
@@ -145,31 +143,41 @@ class IndesignModel:
                             characterStyleDict[char_attr] = attr_function(
                                 characterStyleRange.attrib.get(char_attr), package, args
                             )
-
-                    print("###LI characterStyleRange : ",characterStyleRange,characterStyleRange.attrib )
-                    listItem=""
                     lineStyle = "; ".join(list(characterStyleDict.values()))
+                    print("###LI characterStyleRange : ",characterStyleRange.attrib )
+                    
                     for child in characterStyleRange.iter():
+                        print("###LI Child Text",child.attrib)
                         if child.tag == "Content":
-                            listItem += f"<li style='{lineStyle}'>{child.text}</li>"
+                            listItem += f"<span style='{lineStyle}'>{child.text}</span>"
                             print("---Text-LI--",child.text)
+                        if child.tag == "Br":
+                            listItem += f"</li><li>"
                     if "LeftIndent" in paragraphStyleList:
                         if "FirstLineIndent" in paragraphStyleList:
                             del paragraphStyleList["FirstLineIndent"]
                         paragraphStyleList["LeftIndent"] = f" padding-inline-start "+ paragraphStyleList.get("LeftIndent")[paragraphStyleList.get("LeftIndent").find(":"):]
                         paraStyle = "; ".join(list(paragraphStyleList.values()))
-                    print("*************  span ***************",listItemParagraph,listItem)
-                    if listItemParagraph == "NumberedList" and listItem !="":
-                        htmlContent += f"<ol style='{paraStyle}'>{listItem}</ol><br>"        
-                    elif listItem !="":
-                        htmlContent += f"<ul style='{paraStyle}'>{listItem}</ul><br>"
-
+                
+                if listItemParagraph == "NumberedList" and listItem !="":
+                    htmlContent += f"<ol style='{paraStyle}'>{listItem}</ol><br>"        
+                elif listItem !="":
+                    htmlContent += f"<ul style='{paraStyle}'>{listItem}</ul>"
+                    htmlContent = htmlContent.replace("</p><br><ul","</p><ul").replace("<li></ul>","</ul>")
             else:
                 paragraghStyle = f"<p style='{paraStyle}'>"
-
+                characterStyleRangeLength = 0
                 for characterStyleRange in paragraphStyleRange.iter(
                     "CharacterStyleRange"
                 ):
+                    characterStyleRangeLength +=1
+                
+                #counter 
+                characterStyleRangeCounter = 0
+                for characterStyleRange in paragraphStyleRange.iter(
+                    "CharacterStyleRange"
+                ):
+                    characterStyleRangeCounter +=1
                     # print("### characterStyleRange : ",characterStyleRange,characterStyleRange.attrib )
                     characterStyle = ""
                     characterStyleDict = {
@@ -188,22 +196,6 @@ class IndesignModel:
                                 characterStyleRange.attrib.get(char_attr), package, args
                             )
 
-                    # Get the font style
-                    # fontStyle = characterStyleRange.attrib.get("FontStyle")
-                    # fontStyle = commons.get_font_weight(fontStyle)
-
-                    # Get the font size
-                    # fontSize = characterStyleRange.attrib.get("PointSize")
-                    # fontSize = commons.get_font_size(fontSize)
-
-                    # Get the font color
-                    # fontColor = characterStyleRange.attrib.get("FillColor")
-                    # fontColor = commons.get_color(fontColor, package, args)
-
-                    # Get the storke color
-                    # strokeColor = characterStyleRange.attrib.get("StrokeColor")
-                    # strokeColor = commons.get_stroke_color(strokeColor, package, args)
-
                     # Get the Underline style
                     underline = characterStyleRange.attrib.get("Underline")
 
@@ -218,28 +210,20 @@ class IndesignModel:
                     characterStyleDict["background"] = background
                     strikeThrough = commons.StrikeThru(strikeThrough)
 
-                    # Get the font family
-                    # fontFamily = commons.get_font_family(None)
-
-                    # Get the line height
-                    # lineHeight = commons.get_line_height(None)
-
                     # Get the Image url
                     imageUrl = ""
+                    second_last_tag = ""
                     last_tag = ""
+                    
+                    characterStyleRangeChildLength = 0
                     for child in characterStyleRange.iter():
-                        # if child.tag == "Rectangle":
-                        #     for properties in child.iter():
-                        #         print("^^^^^properties^^^^^",properties,properties.attrib)
-                        #         if properties.tag == "Image":
-                        #             for link in properties.iter():
-                        #                 print("*******link*******",link,link.attrib)
-                        #                 if link.tag == "Link":
-                        #                     imageUrl = commons.process_image(
-                        #                         link.attrib.get("LinkResourceURI")
-                        #                     )
-                        #                     characterStyle += imageUrl
+                        characterStyleRangeChildLength +=1
 
+                    #counter
+                    characterStyleRangeChildCounter = 0
+                    for child in characterStyleRange.iter():
+                        characterStyleRangeChildCounter +=1
+                        print("******************",paragraphStyleRangeLength,paragraphStyleRangeCounter,characterStyleRangeLength,characterStyleRangeCounter,characterStyleRangeChildLength,characterStyleRangeChildCounter,last_tag,child.tag)
                         if child.tag == "Rectangle":
                             outerStyle = "display: inline-block; overflow:hidden;"
                             innerStyle = ""
@@ -249,7 +233,7 @@ class IndesignModel:
                             )
                             outerStyle += border_radius
                             for properties in child.iter():
-                                print("------child props------",properties,properties.attrib)
+                                # print("------child props------",properties,properties.attrib)
                                 if properties.tag == "PathGeometry":
                                     size, width, height = commons.get_image_container_size(
                                         properties
@@ -263,11 +247,9 @@ class IndesignModel:
                                     )
 
                                 if properties.tag == "FrameFittingOption":
-                                    print("%%%%%%%%%%%%%%%%%%%",properties.tag)
                                     frame = commons.get_image_framing(
                                         properties.attrib, child
                                     )
-                                    print("^^^^^^^^^^^^^^^^^^^^^^^^^",frame)
                                     innerStyle += frame
 
                                 if properties.tag == "BlendingSetting":
@@ -286,46 +268,19 @@ class IndesignModel:
 
                         if child.tag == "Properties":
                             for properties in child.iter():
-                                print("##child properties",properties)
+                                # print("##child properties",properties)
                                 if hasattr(commons, properties.tag):
                                     attr_function = getattr(commons, properties.tag)
                                     characterStyleDict[properties.tag] = attr_function(
                                         properties.text, package, args
                                     )
 
-                                # if properties.tag == "Leading":
-                                #     lineHeight = commons.get_line_height(
-                                #         properties.text
-                                #     )
-
-                                # if properties.tag == "AppliedFont":
-                                #     fontFamily = commons.get_font_family(
-                                #         properties.text
-                                #     )
                         if child.tag == "Content":
-                            # characterStyle += "<span "
-                            # characterStyle += (
-                            #     "style='" + fontStyle + ";" if fontStyle else ""
-                            # )
-                            # characterStyle += fontColor + ";" if fontColor else ""
-                            # characterStyle += strokeColor + ";" if strokeColor else ""
-                            # characterStyle += underline + ";" if underline else ""
-                            # # characterStyle += strikeThrough + ";" if strikeThrough else ""
-                            # characterStyle += fontFamily + ";" if fontFamily else ""
-                            # characterStyle += lineHeight + ";" if lineHeight else ""
-                            # characterStyle += fontSize + ";" if fontSize else ""
-                            # characterStyle += background + ";" if strikeThrough else ""
-                            # characterStyle += "'>" + child.text if child.text else "'>"
-                            # characterStyle += "</span>"
                             
                             if "FontStyle" in characterStyleDict:
                                 if(characterStyleDict.get("FontStyle").find(":")==-1):
                                     characterStyleDict["AppliedFont"] = characterStyleDict["AppliedFont"] + " " +characterStyleDict["FontStyle"]
                                     del characterStyleDict["FontStyle"]
-
-                            # if "StrokeWeight" in characterStyleDict:
-                            #     characterStyleDict["StrokeWeight"] = characterStyleDict["StrokeColor"] + " " +characterStyleDict["StrokeWeight"]
-                            #     del characterStyleDict["StrokeColor"]       
 
                             finalCharStyle = "; ".join(
                                 list(characterStyleDict.values())
@@ -334,14 +289,30 @@ class IndesignModel:
                             characterStyle += f"<span style='{finalCharStyle}'>{child.text if child.text else None }</span>"
 
                         if child.tag == "Br":
-                            # characterStyle += "<br />"
-                            print("------------",last_tag,child.tag)
-                            if last_tag == "Br":
-                                characterStyle += f"</p><p style='{paraStyle}'>"
+                            print("------------",characterStyleRangeLength,characterStyleRangeCounter,second_last_tag,last_tag,child.tag)
+                            if characterStyleRangeLength == characterStyleRangeCounter and characterStyleRangeChildLength == characterStyleRangeChildCounter and last_tag == "Br" :
+                                pass
+                            # elif characterStyleRangeLength == characterStyleRangeCounter and last_tag == "Content" :
+                            #     pass    
+                            elif characterStyleRangeLength == 1 and last_tag == "CharacterStyleRange" :
+                                pass   
+                            elif characterStyleRangeCounter == 1 and last_tag == "AppliedFont" :
+                                pass
+                            # elif characterStyleRangeCounter != characterStyleRangeLength and characterStyleRangeChildCounter == 4 :
+                            #     pass    
+                            elif last_tag == "Br":
+                                characterStyle += f"</p><p style='margin: 0px;{paraStyle}'>"
                             elif last_tag == "Content":
                                 characterStyle += "<br>"
+                            elif last_tag == "CharacterStyleRange":
+                                characterStyle += "<br>"   
+                            elif last_tag == "AppliedFont":
+                                characterStyle += "<br>" 
+                            elif last_tag == "Leading":
+                                characterStyle += "<br>"         
 
                         #update last_tag
+                        second_last_tag = last_tag
                         last_tag = child.tag        
 
                     # Append character style to paragraph style
@@ -350,12 +321,15 @@ class IndesignModel:
                 # Close the paragraph style
                 paragraghStyle += "</p>"
                 pattern = re.compile(r"<p([^>]*)><\/p>")
-                paragraghStyle = paragraghStyle.replace("<p style=''></p>","")
-                if paragraghStyle.find("<br></p>") == -1:
-                    paragraghStyle = paragraghStyle.replace("</p>","<br></p>")
+                # paragraghStyle = paragraghStyle.replace("<p style=''><br></p>","<br>")
+                # paragraghStyle = paragraghStyle.replace("<p style=''><br></p>","")
+                # paragraghStyle = paragraghStyle.replace("<br></p>","</p>")
+                # paragraghStyle = paragraghStyle.replace("</span><br><span","</span><br><br><span")
+                # if paragraghStyle.find("<br></p>") == -1:
+                #     paragraghStyle = paragraghStyle.replace("</p>","<br></p>")
                    
-                paragraghStyle = pattern.sub("",paragraghStyle)
-
+                # paragraghStyle = pattern.sub("",paragraghStyle)
+                
                 htmlContent += paragraghStyle
 
         return htmlContent
