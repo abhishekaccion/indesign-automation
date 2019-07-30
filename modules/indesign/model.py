@@ -223,7 +223,8 @@ class IndesignModel:
                     characterStyleRangeChildCounter = 0
                     for child in characterStyleRange.iter():
                         characterStyleRangeChildCounter +=1
-                        print("******************",paragraphStyleRangeLength,paragraphStyleRangeCounter,characterStyleRangeLength,characterStyleRangeCounter,characterStyleRangeChildLength,characterStyleRangeChildCounter,last_tag,child.tag)
+                        # print("******************",paragraphStyleRangeLength,paragraphStyleRangeCounter,characterStyleRangeLength,characterStyleRangeCounter,characterStyleRangeChildLength,characterStyleRangeChildCounter,last_tag,child.tag)
+                        print("##child properties",child.attrib)
                         if child.tag == "Rectangle":
                             outerStyle = "display: inline-block; overflow:hidden;"
                             innerStyle = ""
@@ -268,7 +269,7 @@ class IndesignModel:
 
                         if child.tag == "Properties":
                             for properties in child.iter():
-                                # print("##child properties",properties)
+                                
                                 if hasattr(commons, properties.tag):
                                     attr_function = getattr(commons, properties.tag)
                                     characterStyleDict[properties.tag] = attr_function(
@@ -289,7 +290,7 @@ class IndesignModel:
                             characterStyle += f"<span style='{finalCharStyle}'>{child.text if child.text else None }</span>"
 
                         if child.tag == "Br":
-                            print("------------",characterStyleRangeLength,characterStyleRangeCounter,second_last_tag,last_tag,child.tag)
+                            # print("------------",characterStyleRangeLength,characterStyleRangeCounter,second_last_tag,last_tag,child.tag)
                             if characterStyleRangeLength == characterStyleRangeCounter and characterStyleRangeChildLength == characterStyleRangeChildCounter and last_tag == "Br" :
                                 pass
                             # elif characterStyleRangeLength == characterStyleRangeCounter and last_tag == "Content" :

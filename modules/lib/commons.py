@@ -4,7 +4,11 @@ import xml.etree.ElementTree as ET
 import modules.lib.decode_color as decode_color
 from urllib.parse import unquote
 import base64
-
+import os
+import sys
+from requests import Request, Session
+import json
+static_file_host = 'https://dev.authorify.com/afy-api-auth/static-files/'
 
 def get_image_position(attrib, iterator):
     style = ""
@@ -99,7 +103,7 @@ def get_image_transformation(properties):
     )
 
 def ptToPx(val):
-    print("&&&&&&&&&&&&",float(val),float(val)/72,float(val)/72*96)
+    # print("&&&&&&&&&&&&",float(val),float(val)/72,float(val)/72*96)
     return float(val)/72*96
 
 def get_image_container_size(properties):
@@ -108,13 +112,11 @@ def get_image_container_size(properties):
     height = []
 
     for path in properties.iter("PathPointType"):
-        print("****************",path.attrib)
         points = path.attrib["Anchor"].split(" ")
         if not float(points[0]) in width:
             width.append(float(points[0]))
         if not float(points[1]) in height:
             height.append(float(points[1]))
-    print("*******123******",width,height)        
     size["width"] = str(ptToPx(-(width[0] - width[1]))) + "px"
     size["height"] = str(ptToPx(-(height[0] - height[1]))) + "px"
 
@@ -127,11 +129,11 @@ def Justification(val, package=None, args=None):
         "CenterAlign": "text-align: center",
         "RightAlign": "text-align: right",
         "LeftAlign": "text-align: left",
-        "LeftJustified": "display: flex; justify-content: end",
-        "CenterJustified": "display: flex; justify-content: center",
-        "RightJustified": "display: flex; justify-content: flex-end",
-        "ToBindingSide": "display: flex; justify-content: end",
-        "AwayFromBindingSide": "display: flex; justify-content: flex-end",
+        # "LeftJustified": "text-align: left;text-align-last: left;",
+        # "CenterJustified": "text-align: left;text-align-last: center;",
+        # "RightJustified": "text-align: left;text-align-last: right;",
+        # "ToBindingSide": "display: flex; justify-content: end",
+        # "AwayFromBindingSide": "display: flex; justify-content: flex-end",
         "FullyJustified": "text-align: justify",
     }
 
@@ -225,7 +227,8 @@ def Leading(val, package=None, args=None):
 
 def FillColor(color, package, args):
     tree = ET.parse(args.extract + package.graphic.name)
-
+    if "_R" in color and "_G" in color and "_B" in color :
+        return f"color: rgb({color[color.find('_R')+2]},{color[color.find('_G')+2]},{color[color.find('_B')+2]})" 
     color_str = "rgb(0, 0, 0)"
     for i in tree.getroot().iter("Color"):
         if i.attrib["Self"] == color:
@@ -265,16 +268,35 @@ def StrokeColor(color, package, args):
 def get_text_decoration(args):
     return "text-decoration: underline" if args else None
 
+def send_data_to_server(image_path):
+         
+    image_filename = os.path.basename(image_path)
+ 
+    multipart_form_data = {
+        'user_image': (image_filename, open(image_path, 'rb'))
+    }
+    url = 'https://dev.authorify.com/afy-api-auth/user/image?type=menuscript'
+    headers = {"Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InVzZXJJZCI6NTM1MSwicG9ydGFsLWlkIjo0ODA3NDUwLCJwcm9maWxlLXRva2VuIjoiQU9fVC1tTkQzR3A2VHBad2prOXBRRl9QNTkzOXdMenhmVURRUXZfc3l6LTBVRXNjUzBsMnRqbVZCczg4b0xNY3dxMTdRYlhlZW1CV09XVUlNOHdDWUxHRjVFb0hTZlotajNXWFFNbjkzTk5PMUZsNUViTTdkdi1WM2tiYUxmSkViMjRhYUFvZldQT0UiLCJwcm9maWxlLXVybCI6Imh0dHBzOi8vYXBwLmh1YnNwb3QuY29tL2NvbnRhY3RzLzQ4MDc0NTAvY29udGFjdC81MzUxIiwiY291bnRyeSI6IkluZCIsImFmeV9ib29rX2NyZWRpdHMiOiI5MDAiLCJtb2JpbGVwaG9uZSI6Ijg4OTgxNzcwMzIiLCJzdGF0ZSI6Ik1BSCIsInppcCI6IjQwMDA1NSIsImxhc3RuYW1lIjoiRHViIiwiYWRkcmVzc2xpbmUyIjoiY3J1eiIsImFkZHJlc3NsaW5lMSI6InNhbnRhIiwiZmlyc3RuYW1lIjoiQWJoaSIsImFzc29jaWF0ZWRjb21wYW55aWQiOiIxMDY3MDYyOTA3IiwiYWZ5X3BhY2thZ2UiOiI1YzViZTBhMjI2MDBkZTMxMmRlNGU2ZTY7NWM1OTQ2Y2MyNjAwZGUzMTJkZTRlNmIwOzVjNWJlOGEzMjYwMGRlMzEyZGU0ZTZlYTs1YzYzZjcwMWQ4YTE1ODNhNzg2NWJiMDI7NWM2ZDE5MDFiN2ZkZTUxYTA5YTZlNDZmOzVjNmQxYjE2YjdmZGU1MWEwOWE2ZTQ3Mjs1Yzc5MDdmYWI3ZmRlNTFhMDlhNmU0ZjI7NWM4MjQ0MWJiN2ZkZTUxYTA5YTZlNTMyOzVjYTQ4Mzg0ZDAwZTEzMmJiMDNjZTNiYTs1Y2IwNDdiZTRjNDQzZjcwZDVhMjYxYzE7NWNiODNlMDJkNzMzMTAzZGRiMGI1ODQ1OzVjYzE3YmQyZDczMzEwM2RkYjBiNWFiOTs1Y2NhYWE0MGQ3MzMxMDNkZGIwYjViMzE7NWNjYWMzOGRkNzMzMTAzZGRiMGI1YjZjOzVjZDEyZDgwZDczMzEwM2RkYjBiNWJiZTs1Y2Q5MzZiNTcxZWFlNDE0ZTQ3MDUwOGQ7NWNkYTk0ZTI3MWVhZTQxNGU0NzA1MGUxOzVjZGJjN2FhNzFlYWU0MTRlNDcwNTEyNiIsImNpdHkiOiJNdW1iYWkiLCJlbWFpbCI6ImFiaGlzaGVrLmR1YmV5QGFjY2lvbmxhYnMuY29tIiwiYWZ5X2N1c3RvbWVyX3Byb2ZpbGVfaW1hZ2VfdXJsIjoiL3VzZXItaW1hZ2VzLzUzNTEvcHJvZmlsZV81MzUxLmpwZz91dWlkPTE1NjMyNzA1MzA4OTMiLCJyb2xlIjoidXNlciJ9LCJpYXQiOjE1NjM1MzExMjgsImV4cCI6MTU2MzU0NTUyOH0.sIK0UuT_FJPSRY7mEdET_LYG5CukZJ1ERnYmnnEelz8"}
+    s = Session()
+    req = Request('POST',  url, data={}, headers=headers,files=multipart_form_data)
+   
+    prepped = s.prepare_request(req)
 
-
-
+    response = s.send(prepped,stream=True,timeout=1000)
+    response.json()
+    if response.status_code == 200:
+        res = json.loads(response.content)
+        return static_file_host + res['data']['url']
+    else:
+        return null    
 def process_image(url, outer="", inner=""):
     url = unquote(url).split(":")
-    print("-----img----",url[1])
-    with open(url[1], "rb") as f:
-        b = base64.b64encode(f.read())
+    new_image_url = os.path.dirname(os.path.abspath(os.curdir))+"/images/"+url[1].split("/")[-1]
+    # with open(new_image_url, "rb") as f:
+    #     b = base64.b64encode(f.read())
+    uploaded_url = send_data_to_server(new_image_url)
     return f"""<span style='{outer} display: block; margin: auto'>
         <img style='{outer} display: block; margin: auto; align:center;' 
-        src='data:image/png;base64,{str(b).split("'")[1]}'/>
+        src='{uploaded_url}'/>
         </span>"""
 
